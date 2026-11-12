@@ -1,0 +1,971 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Medharthi CRM Analytics</title>
+<meta name="color-scheme" content="light dark">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+  --bg:#f5f6fa; --surface:#ffffff; --surface2:#f0f2f7; --text:#171a21; --muted:#667085; --line:#e3e6ee;
+  --accent:#4f46e5; --accent-soft:#eceeff; --good:#0a8f5b; --bad:#d92d20;
+  --c1:#4f46e5; --c2:#0ea5e9; --c3:#f59e0b; --c4:#10b981; --c5:#ef4444;
+  --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0f1117; --surface:#171a23; --surface2:#1e2230; --text:#eef0f6; --muted:#9aa3b5; --line:#2a2f3f;
+    --accent:#8b86ff; --accent-soft:#25254a; --good:#3ddc97; --bad:#ff7a6e;
+    --c1:#8b86ff; --c2:#38bdf8; --c3:#fbbf24; --c4:#34d399; --c5:#f87171;
+    --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0f1117; --surface:#171a23; --surface2:#1e2230; --text:#eef0f6; --muted:#9aa3b5; --line:#2a2f3f;
+  --accent:#8b86ff; --accent-soft:#25254a; --good:#3ddc97; --bad:#ff7a6e;
+  --c1:#8b86ff; --c2:#38bdf8; --c3:#fbbf24; --c4:#34d399; --c5:#f87171; --shadow:none;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%}
+.wrap{max-width:1280px;margin:0 auto;padding:16px}
+header.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px;justify-content:space-between;margin-bottom:14px}
+h1{font-size:20px;margin:0;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:12.5px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:14px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.grow{flex:1 1 auto}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--muted);font-weight:600;letter-spacing:.02em;text-transform:uppercase}
+select,input[type=text],input[type=number],input[type=date],input[type=search]{background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font:inherit;min-height:34px;max-width:100%}
+select:focus,input:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:8px;padding:7px 12px;min-height:34px}
+button:hover{background:var(--surface2)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+button.primary:hover{filter:brightness(1.08);background:var(--accent)}
+button.chip{border-radius:999px;padding:4px 11px;min-height:28px;font-size:12.5px}
+button.chip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;border-right:1px solid var(--line);min-height:32px}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--accent);color:#fff}
+#drop{border:2px dashed var(--line);border-radius:12px;padding:28px 16px;text-align:center;background:var(--surface);transition:.15s}
+#drop.over{border-color:var(--accent);background:var(--accent-soft)}
+#drop h2{margin:0 0 6px;font-size:17px}
+.hide{display:none!important}
+.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);margin:14px 0 12px;-webkit-overflow-scrolling:touch}
+.tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;padding:9px 14px;color:var(--muted);white-space:nowrap;font-weight:600}
+.tabs button.on{color:var(--accent);border-bottom-color:var(--accent)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:12px}
+.kpi{padding:12px 14px}
+.kpi .l{font-size:11.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.kpi .v{font-size:24px;font-weight:700;letter-spacing:-.02em;margin:3px 0 2px}
+.kpi .d{font-size:12.5px;font-weight:600}
+.up{color:var(--good)} .dn{color:var(--bad)} .flat{color:var(--muted)}
+.grid2{display:grid;grid-template-columns:2fr 1fr;gap:12px}
+@media(max-width:860px){.grid2{grid-template-columns:1fr}}
+.chartbox{position:relative;height:300px}
+.tbl-wrap{overflow:auto;max-width:100%;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+th,td{padding:7px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+th{background:var(--surface2);font-weight:600;position:sticky;top:0;z-index:1}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--surface);z-index:2;border-right:1px solid var(--line)}
+th:first-child{background:var(--surface2);z-index:3}
+tr.sub td{font-size:11.5px;color:var(--muted);background:var(--surface2)}
+tr.sub td:first-child{background:var(--surface2)}
+tr.tot td{font-weight:700;background:var(--surface2)}
+tr.tot td:first-child{background:var(--surface2)}
+.note{color:var(--muted);font-size:12px;margin:6px 0}
+.insights{margin:0;padding-left:18px}
+.insights li{margin:5px 0}
+.maps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.vals{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.pace{margin:10px 0}
+.bar{height:10px;border-radius:99px;background:var(--surface2);overflow:hidden;margin:4px 0}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+h3{margin:0 0 8px;font-size:14px}
+.err{color:var(--bad);font-weight:600}
+.pill{display:inline-block;padding:2px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div>
+    <h1>Medharthi CRM Analytics</h1>
+    <div class="sub" id="fileInfo">Upload a CRM dump (.csv / .xlsx). Everything is calculated in your browser, and no data is uploaded anywhere.</div>
+  </div>
+  <div class="row">
+    <button id="btnNew" class="hide">Load another file</button>
+    <button id="btnTheme" title="Toggle theme">Theme</button>
+  </div>
+</header>
+
+<!-- Upload -->
+<div id="drop">
+  <h2>Drop your CRM dump here</h2>
+  <div class="sub" style="margin-bottom:12px">CSV or Excel. First row must be column headers. Dates like 2026-11-03 or 03/11/2026 both work (day first).</div>
+  <input type="file" id="file" accept=".csv,.xlsx,.xls,.tsv,.txt" class="hide">
+  <button class="primary" id="btnPick">Choose file</button>
+  <button id="btnSample">Try with sample data</button>
+  <div id="loadMsg" class="note"></div>
+</div>
+
+<!-- Mapping -->
+<section id="mapSec" class="card hide" style="margin-top:12px">
+  <div class="row" style="justify-content:space-between;margin-bottom:8px">
+    <h3 style="margin:0">1. Tell the dashboard what your columns mean <span class="pill" id="rowCount"></span></h3>
+    <button id="btnToggleMap">Hide</button>
+  </div>
+  <div id="mapBody">
+    <div class="maps" id="maps"></div>
+    <div class="row" style="margin-top:12px">
+      <label class="f">Enrollments and revenue counted on
+        <select id="attr">
+          <option value="event">Enrollment date (when it happened)</option>
+          <option value="lead">Lead created date (cohort view)</option>
+        </select>
+      </label>
+      <label class="f">Date format in file
+        <select id="dfmt"><option value="auto">Auto-detect</option><option value="mdy">MM/DD/YYYY (LeadSquared default)</option><option value="dmy">DD/MM/YYYY</option></select>
+      </label>
+      <label class="f" style="flex-direction:row;align-items:center;gap:6px;text-transform:none;font-size:13px">
+        <input type="checkbox" id="cleanSrc" checked> Merge fallback sources (ig, instagram, FB Lead Ads → Facebook Ads…)
+      </label>
+      <label class="f" style="flex-direction:row;align-items:center;gap:6px;text-transform:none;font-size:13px">
+        <input type="checkbox" id="exclSrc" checked> Exclude Channel Partner and Ycmou LSC
+      </label>
+      <label class="f">Quarter type
+        <select id="fiscal"><option value="0">Calendar (Jan–Mar = Q1)</option><option value="1">Financial year (Apr–Mar)</option></select>
+      </label>
+      <label class="f" style="flex-direction:row;align-items:center;gap:6px;text-transform:none;font-size:13px">
+        <input type="checkbox" id="dedupe" checked> Count each Lead ID once
+      </label>
+      <button class="primary" id="btnApply">Apply and build dashboard</button>
+    </div>
+    <div class="note" id="mapNote"></div>
+  </div>
+</section>
+
+<!-- Dashboard -->
+<section id="dash" class="hide">
+  <div class="card" style="margin-top:12px">
+    <div class="row">
+      <label class="f">From <input type="date" id="from"></label>
+      <label class="f">To <input type="date" id="to"></label>
+      <div class="row" id="presets" style="gap:6px"></div>
+      <label class="f">View by
+        <span class="seg" id="gran">
+          <button data-g="day">Day</button><button data-g="week" class="on">Week</button><button data-g="month">Month</button><button data-g="quarter">Quarter</button>
+        </span>
+      </label>
+    </div>
+    <div class="row" style="margin-top:10px" id="filters"></div>
+    <div class="note" id="rangeNote"></div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button data-t="overview" class="on">Overview</button>
+    <button data-t="trends">Trends (WoW / MoM / QoQ)</button>
+    <button data-t="breakdown">Breakdown</button>
+    <button data-t="explorer">Explorer (manual analysis)</button>
+    <button data-t="data">Data</button>
+  </div>
+
+  <div id="tab-overview">
+    <div class="kpis" id="kpis"></div>
+    <div class="grid2">
+      <div class="card">
+        <div class="row" style="justify-content:space-between;margin-bottom:6px">
+          <h3 style="margin:0" id="trendTitle">Trend</h3>
+          <div class="row" style="gap:6px" id="metricChips"></div>
+        </div>
+        <div class="chartbox"><canvas id="cTrend"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Funnel (selected range)</h3>
+        <div class="chartbox"><canvas id="cFunnel"></canvas></div>
+      </div>
+    </div>
+    <div class="grid2" style="margin-top:12px">
+      <div class="card">
+        <h3>What changed</h3>
+        <ul class="insights" id="insights"></ul>
+      </div>
+      <div class="card">
+        <h3>Run rate vs monthly target</h3>
+        <div class="row">
+          <label class="f">Leads <input type="number" id="tLeads" min="0" style="width:100px"></label>
+          <label class="f">Enrollments <input type="number" id="tEnr" min="0" style="width:100px"></label>
+          <label class="f">Revenue (₹) <input type="number" id="tRev" min="0" style="width:120px"></label>
+        </div>
+        <div id="pace"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-trends" class="hide">
+    <div class="row" style="justify-content:space-between;margin-bottom:8px">
+      <div class="note" id="trendNote" style="margin:0"></div>
+      <button id="expTrend">Export CSV</button>
+    </div>
+    <div class="tbl-wrap"><table id="trendTbl"></table></div>
+  </div>
+
+  <div id="tab-breakdown" class="hide">
+    <div class="row" style="margin-bottom:10px">
+      <label class="f">Split by <select id="bdCol"></select></label>
+      <label class="f">Sort by
+        <select id="bdSort"><option value="rev">Revenue</option><option value="enr">Enrollments</option><option value="ql">Qualified leads</option><option value="leads">Leads</option><option value="l2e">Lead → Enrolment %</option></select>
+      </label>
+      <button id="expBd">Export CSV</button>
+    </div>
+    <div class="grid2">
+      <div class="card"><div class="chartbox"><canvas id="cBd"></canvas></div></div>
+      <div class="card"><div class="note" id="bdNote"></div></div>
+    </div>
+    <div class="tbl-wrap" style="margin-top:12px"><table id="bdTbl"></table></div>
+  </div>
+
+  <div id="tab-explorer" class="hide">
+    <div class="card">
+      <div class="note" style="margin-top:0">Build any cut you need. Pick rows, optional columns, and what to measure. It uses the date range and filters above (on lead created date).</div>
+      <div class="row">
+        <label class="f">Rows <select id="exRow"></select></label>
+        <label class="f">Columns <select id="exCol"></select></label>
+        <label class="f">Measure
+          <select id="exMeas">
+            <option value="count">Count of rows</option>
+            <option value="distinct">Distinct count of…</option>
+            <option value="sum">Sum of…</option>
+            <option value="avg">Average of…</option>
+            <option value="min">Min of…</option>
+            <option value="max">Max of…</option>
+          </select>
+        </label>
+        <label class="f">Of column <select id="exMeasCol"></select></label>
+        <label class="f">Show as
+          <select id="exShow"><option value="v">Value</option><option value="r">% of row total</option><option value="c">% of column total</option><option value="g">% of grand total</option></select>
+        </label>
+        <label class="f">Max rows <input type="number" id="exTop" value="50" min="5" max="500" style="width:80px"></label>
+        <button class="primary" id="exRun">Run</button>
+        <button id="expEx">Export CSV</button>
+      </div>
+    </div>
+    <div class="note" id="exNote"></div>
+    <div class="tbl-wrap"><table id="exTbl"></table></div>
+  </div>
+
+  <div id="tab-data" class="hide">
+    <div class="row" style="margin-bottom:8px">
+      <input type="search" id="dtSearch" placeholder="Search any value…" style="min-width:240px">
+      <button id="expData">Export filtered rows (CSV)</button>
+      <span class="note" id="dtNote"></span>
+    </div>
+    <div class="tbl-wrap" style="max-height:560px"><table id="dtTbl"></table></div>
+  </div>
+</section>
+
+<div class="note" style="text-align:center;margin:24px 0 8px" id="footNote"></div>
+</div>
+
+<script>
+"use strict";
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s), $$ = s => Array.from(document.querySelectorAll(s));
+const MONTHS = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+const pad = n => String(n).padStart(2,"0");
+const ymd = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const fromYmd = s => { const p = s.split("-").map(Number); return new Date(p[0],p[1]-1,p[2]); };
+const sod = d => new Date(d.getFullYear(),d.getMonth(),d.getDate());
+const addDays = (d,n) => new Date(d.getFullYear(),d.getMonth(),d.getDate()+n);
+const dayDiff = (a,b) => Math.round((sod(b)-sod(a))/864e5);
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmtN = n => n==null||isNaN(n) ? "–" : Math.round(n).toLocaleString("en-IN");
+const fmtD = (n,dp) => n==null||isNaN(n) ? "–" : Number(n).toLocaleString("en-IN",{maximumFractionDigits:dp==null?2:dp});
+const fmtINR = n => {
+  if(n==null||isNaN(n)) return "–";
+  const a = Math.abs(n), s = n<0?"-":"";
+  if(a>=1e7) return s+"₹"+(a/1e7).toFixed(2)+" Cr";
+  if(a>=1e5) return s+"₹"+(a/1e5).toFixed(2)+" L";
+  return s+"₹"+Math.round(a).toLocaleString("en-IN");
+};
+const fmtP = n => n==null||isNaN(n) ? "–" : (n*100).toFixed(1)+"%";
+const MET = {
+  leads:{n:"Leads",f:fmtN}, ql:{n:"Qualified leads",f:fmtN}, enr:{n:"Enrollments",f:fmtN}, rev:{n:"Revenue",f:fmtINR}
+};
+
+function parseDate(v){
+  if(v===""||v==null) return null;
+  if(v instanceof Date) return isNaN(v) ? null : sod(v);
+  if(typeof v==="number"){
+    if(v>20000 && v<80000){ const u = new Date(Math.round((v-25569)*864e5)); return new Date(u.getUTCFullYear(),u.getUTCMonth(),u.getUTCDate()); }
+    if(v>1e11) return sod(new Date(v));
+    return null;
+  }
+  const s = String(v).trim(); if(!s) return null;
+  let m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+  if(m) return new Date(+m[1],+m[2]-1,+m[3]);
+  m = s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})/);
+  if(m){ let a=+m[1], b=+m[2], y=+m[3]; if(y<100) y+=2000; let d, mo; if(S.dateFmt==="dmy"){ d=a; mo=b; } else { mo=a; d=b; } if(mo>12 && d<=12){ const t=d; d=mo; mo=t; } return new Date(y,mo-1,d); }
+  m = s.match(/^(\d{1,2})[ \-]([A-Za-z]{3,9})[ \-,]*(\d{2,4})/);
+  if(m){ const mi = MONTHS.indexOf(m[2].slice(0,3).toLowerCase()); if(mi>=0){ let y=+m[3]; if(y<100) y+=2000; return new Date(y,mi,+m[1]); } }
+  const t = Date.parse(s); return isNaN(t) ? null : sod(new Date(t));
+}
+function parseNum(v){
+  if(typeof v==="number") return v;
+  if(v==null) return 0;
+  const n = parseFloat(String(v).replace(/[₹,\s]|rs\.?|inr/gi,""));
+  return isNaN(n) ? 0 : n;
+}
+
+/* ---------- periods ---------- */
+function pStart(d,g){
+  d = sod(d);
+  if(g==="day") return d;
+  if(g==="week") return addDays(d,-((d.getDay()+6)%7));
+  if(g==="month") return new Date(d.getFullYear(),d.getMonth(),1);
+  return new Date(d.getFullYear(),Math.floor(d.getMonth()/3)*3,1);
+}
+function pNext(s,g){
+  if(g==="day") return addDays(s,1);
+  if(g==="week") return addDays(s,7);
+  if(g==="month") return new Date(s.getFullYear(),s.getMonth()+1,1);
+  return new Date(s.getFullYear(),s.getMonth()+3,1);
+}
+const mon = d => d.toLocaleString("en-GB",{month:"short"});
+function pLabel(s,g){
+  if(g==="day") return s.getDate()+" "+mon(s);
+  if(g==="week"){ const e = addDays(s,6); return s.getDate()+" "+mon(s)+" – "+e.getDate()+" "+mon(e); }
+  if(g==="month") return mon(s)+" "+s.getFullYear();
+  const m = s.getMonth(), y = s.getFullYear();
+  if(S.fiscal){ const fq = ((Math.floor(m/3)+3)%4)+1, fy = m>=3 ? y+1 : y; return "FY"+String(fy).slice(2)+" Q"+fq; }
+  return "Q"+(Math.floor(m/3)+1)+" "+y;
+}
+const DELTA = {day:"DoD",week:"WoW",month:"MoM",quarter:"QoQ"};
+const GNAME = {day:"day",week:"week",month:"month",quarter:"quarter"};
+
+/* ---------- state ---------- */
+const S = {
+  raw:[], headers:[], map:{}, rows:[], view:[], dims:[], fileName:"",
+  gran:"week", attr:"event", fiscal:false, dedupe:true, dateFmt:"mdy", cleanSrc:true, exclSrc:true,
+  from:null, to:null, dmin:null, dmax:null,
+  filters:[{c:"",v:""},{c:"",v:""}], metric:"rev", tab:"overview",
+  target:{leads:0,enr:0,rev:0}, charts:{}, exportData:{}, ex:null
+};
+
+/* ---------- file loading ---------- */
+$("#btnPick").onclick = () => $("#file").click();
+$("#file").onchange = e => { if(e.target.files[0]) loadFile(e.target.files[0]); };
+const drop = $("#drop");
+["dragenter","dragover"].forEach(ev => drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over");}));
+["dragleave","drop"].forEach(ev => drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over");}));
+drop.addEventListener("drop",e=>{ const f = e.dataTransfer.files[0]; if(f) loadFile(f); });
+$("#btnSample").onclick = () => { const d = makeSample(); S.fileName = "Sample data (demo)"; ingest(d); };
+$("#btnNew").onclick = () => { $("#drop").classList.remove("hide"); $("#mapSec").classList.add("hide"); $("#dash").classList.add("hide"); $("#btnNew").classList.add("hide"); $("#file").value=""; };
+$("#btnTheme").onclick = () => {
+  const r = document.documentElement, dark = getComputedStyle(r).colorScheme==="dark";
+  r.setAttribute("data-theme", dark ? "light" : "dark"); if(S.rows.length) setTimeout(render,30);
+};
+if(window.matchMedia) window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{ if(S.rows.length) setTimeout(render,30); });
+
+function loadFile(f){
+  $("#loadMsg").textContent = "Reading "+f.name+" …";
+  S.fileName = f.name;
+  const isText = /\.(csv|tsv|txt)$/i.test(f.name);
+  const rd = new FileReader();
+  rd.onerror = () => { $("#loadMsg").innerHTML = '<span class="err">Could not read this file.</span>'; };
+  rd.onload = () => {
+    try{
+      let wb;
+      if(isText) wb = XLSX.read(rd.result,{type:"string",raw:true});
+      else wb = XLSX.read(rd.result,{type:"array"});
+      // choose the sheet with the most rows
+      let best = null, bestN = -1;
+      wb.SheetNames.forEach(n => { const ref = wb.Sheets[n]["!ref"]; if(!ref) return; const r = XLSX.utils.decode_range(ref); const c = r.e.r - r.s.r; if(c>bestN){ bestN=c; best=n; } });
+      if(!best) throw new Error("No data found");
+      const data = XLSX.utils.sheet_to_json(wb.Sheets[best],{defval:"",raw:true});
+      if(!data.length) throw new Error("The sheet has no data rows");
+      ingest(data);
+    }catch(err){ $("#loadMsg").innerHTML = '<span class="err">'+esc(err.message||err)+'</span>'; }
+  };
+  if(isText) rd.readAsText(f); else rd.readAsArrayBuffer(f);
+}
+
+function ingest(data){
+  S.raw = data;
+  S.headers = Object.keys(data[0]).filter(h => h!=="" && !/^__EMPTY/.test(h));
+  autoMap();
+  buildMapUI();
+  $("#drop").classList.add("hide"); $("#mapSec").classList.remove("hide"); $("#btnNew").classList.remove("hide");
+  $("#fileInfo").textContent = S.fileName+" · "+fmtN(data.length)+" rows · "+S.headers.length+" columns";
+  $("#rowCount").textContent = fmtN(data.length)+" rows";
+  $("#loadMsg").textContent = "";
+  if(S.map.date){ applyMapping(); } else { $("#mapNote").innerHTML = '<span class="err">Could not detect a date column. Pick the Lead created date below and press Apply.</span>'; $("#mapBody").classList.remove("hide"); }
+}
+
+/* ---------- column mapping ---------- */
+const FIELDS = [
+  {k:"date",  l:"Created date *"},
+  {k:"id",    l:"Opportunity / Lead ID"},
+  {k:"ql",    l:"Qualified (QL) column", vals:true, defs:/^(qualified|ql|mql|yes|y|true|1)$/i},
+  {k:"enr",   l:"Enrolment status column", vals:true, defs:/^(won|enrolled|enrolment|enrollment|paid|converted|admitted|closed.?won|sale|success|successful|yes|y|true|1)$/i},
+  {k:"enrDate", l:"Enrolment / closure date"},
+  {k:"rev",   l:"Revenue / deal size column"},
+  {k:"src",   l:"Source column (for cleaning)"}
+];
+const dateish = h => /date|time|created|modified|\bon$|_at$/i.test(h);
+function hasData(h){ for(let i=0;i<Math.min(S.raw.length,3000);i++){ const v = S.raw[i][h]; if(v!==""&&v!=null) return true; } return false; }
+function autoMap(){
+  S.map = {}; S.mapVals = {ql:[],enr:[]};
+  const H = S.headers, ex = re => H.find(h => re.test(h.trim()));
+  S.map.date = ex(/^(opportunity )?created on$/i) || ex(/^lead created (date|on)$/i) || H.find(h => /lead.*(date|created)|created.*(date|at|on)/i.test(h) && !/contact|modified/i.test(h)) || H.find(h => /date|created/i.test(h)) || "";
+  S.map.id = ex(/^opportunity id$/i) || ex(/^opportunity auto id$/i) || ex(/^lead.?id$/i) || ex(/^prospect id$/i) || ex(/^id$/i) || "";
+  S.map.ql = (ex(/^mql$/i) && hasData(ex(/^mql$/i)) ? ex(/^mql$/i) : "") || ex(/^(is )?ql$/i) || H.find(h => /qualif|\bql\b/i.test(h)) || ex(/^stage$/i) || "";
+  S.map.enr = ex(/^status$/i) || H.find(h => /enrol|admission|sale.?status|payment.?status|paid.?status/i.test(h) && !dateish(h) && !/amount|fee|price|revenue|deal/i.test(h)) || ex(/^stage$/i) || "";
+  S.map.enrDate = ex(/^actual closure date$/i) || H.find(h => /(enrol|admission|payment|purchase|sale|paid|conversion|won|closure).*(date|time)/i.test(h)) || "";
+  S.map.rev = ex(/^actual deal size$/i) || H.find(h => /revenue|net.?amount|amount.?paid|^amount|deal.?size|fees?|price|gmv/i.test(h) && !dateish(h) && !/expected/i.test(h)) || "";
+  S.map.src = ex(/^opportunity source$/i) || ex(/^pw current source$/i) || H.find(h => /source/i.test(h) && !/campaign|medium|content|term|name|tag|awareness|information|payment|reactivation|final|latest/i.test(h)) || "";
+  Object.keys(S.map).forEach(k => { if(!S.map[k]) delete S.map[k]; });
+  ["ql","enr"].forEach(k => { if(S.map[k]) S.mapVals[k] = defaultVals(S.map[k], FIELDS.find(f=>f.k===k).defs); });
+}
+function distinctVals(col,limit){
+  const m = new Map();
+  for(let i=0;i<S.raw.length;i++){ const v = String(S.raw[i][col]==null?"":S.raw[i][col]).trim(); if(v==="") continue; m.set(v,(m.get(v)||0)+1); if(m.size>5000) break; }
+  return Array.from(m.entries()).sort((a,b)=>b[1]-a[1]).slice(0,limit||14);
+}
+function defaultVals(col,re){
+  return distinctVals(col,60).map(x=>x[0]).filter(v => re.test(v.trim()));
+}
+function buildMapUI(){
+  const opt = (sel,h) => '<option value="'+esc(h)+'"'+(sel===h?" selected":"")+'>'+esc(h)+'</option>';
+  $("#maps").innerHTML = FIELDS.map(f => {
+    const cur = S.map[f.k] || "";
+    let h = '<div><label class="f">'+f.l+'<select data-map="'+f.k+'"><option value="">— not available —</option>'+S.headers.map(x=>opt(cur,x)).join("")+'</select></label>';
+    if(f.vals){ h += '<div class="note" style="margin:6px 0 0">Values that count as <b>'+(f.k==="ql"?"qualified":"enrolled")+'</b> (click to toggle):</div><div class="vals" id="vals-'+f.k+'"></div>'; }
+    return h+'</div>';
+  }).join("");
+  $$("[data-map]").forEach(s => s.onchange = () => {
+    const k = s.dataset.map; S.map[k] = s.value;
+    if(k==="ql"||k==="enr"){ S.mapVals[k] = s.value ? defaultVals(s.value, FIELDS.find(f=>f.k===k).defs) : []; renderChips(k); }
+  });
+  renderChips("ql"); renderChips("enr");
+  $("#attr").value = S.attr; $("#dfmt").value = "auto"; $("#fiscal").value = S.fiscal?"1":"0"; $("#dedupe").checked = S.dedupe;
+}
+function renderChips(k){
+  const box = $("#vals-"+k); if(!box) return;
+  const col = S.map[k];
+  if(!col){ box.innerHTML = '<span class="note">Pick a column first.</span>'; return; }
+  const sel = new Set(S.mapVals[k].map(v=>v.toLowerCase()));
+  const vals = distinctVals(col,14);
+  box.innerHTML = vals.map(([v,c]) => '<button class="chip'+(sel.has(v.toLowerCase())?" on":"")+'" data-k="'+k+'" data-v="'+esc(v)+'">'+esc(v.length>26?v.slice(0,26)+"…":v)+' <span class="sub">'+fmtN(c)+'</span></button>').join("") || '<span class="note">No values found.</span>';
+  box.querySelectorAll("button").forEach(b => b.onclick = () => {
+    const v = b.dataset.v, arr = S.mapVals[k], i = arr.findIndex(x=>x.toLowerCase()===v.toLowerCase());
+    if(i>=0) arr.splice(i,1); else arr.push(v);
+    renderChips(k);
+  });
+}
+$("#btnToggleMap").onclick = () => { const b = $("#mapBody"); b.classList.toggle("hide"); $("#btnToggleMap").textContent = b.classList.contains("hide") ? "Show" : "Hide"; };
+$("#btnApply").onclick = applyMapping;
+
+const FALSY = new Set(["","0","no","n","false","null","none","nil","-","na","n/a"]);
+function matcher(vals){
+  const set = new Set(vals.map(v=>v.toLowerCase().trim()));
+  return v => set.has(String(v==null?"":v).toLowerCase().trim());
+}
+const SRC_CLEAN = {"ig":"Facebook Ads","instagram":"Facebook Ads","fb lead ads":"Facebook Ads","moengage":"clm","whatsapp":"AiSensy","inbound call":"Inbound"};
+const SRC_GROUP = {
+  "facebook ads":"Paid – Meta","google ads":"Paid – Google","linkedinads":"Paid – Other","influencer":"Paid – Other",
+  "pwmedharthi":"Organic / Web","google":"Organic / Web","seo":"Organic / Web","chatgpt.com":"Organic / Web","youtube":"Organic / Web","medharthi tools":"Organic / Web",
+  "pw.live":"PW ecosystem","cross category":"PW ecosystem","pwlivecohort":"PW ecosystem","pwliveexplore":"PW ecosystem","pwskills":"PW ecosystem","clm":"PW ecosystem","click":"PW ecosystem","drip":"PW ecosystem","aisensy":"PW ecosystem","announcement":"PW ecosystem","plotline":"PW ecosystem","cross program":"PW ecosystem",
+  "masterclass":"Events / Databases","webinar":"Events / Databases","database":"Events / Databases","naukri":"Events / Databases",
+  "referral":"Referral","customer referral":"Referral","employee referral":"Referral","pw employee":"Referral",
+  "inbound":"Inbound","ycmou":"Partners","ycmou lsc":"Partners","collegedunia":"Partners","iit kanpur website":"Partners","channel partner":"Partners"
+};
+const SRC_EXCL = new Set(["channel partner","ycmou lsc"]);
+function detectDateFmt(col){
+  let dmy=false, mdy=false;
+  for(let i=0;i<Math.min(S.raw.length,5000);i++){
+    const m = String(S.raw[i][col]==null?"":S.raw[i][col]).match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})/);
+    if(m){ if(+m[1]>12) dmy=true; if(+m[2]>12) mdy=true; }
+  }
+  return dmy&&!mdy ? "dmy" : "mdy";
+}
+function applyMapping(){
+  const m = S.map;
+  if(!m.date){ $("#mapNote").innerHTML = '<span class="err">Lead created date is required.</span>'; return; }
+  S.attr = $("#attr").value; S.fiscal = $("#fiscal").value==="1"; S.dedupe = $("#dedupe").checked;
+  S.cleanSrc = $("#cleanSrc").checked; S.exclSrc = $("#exclSrc").checked;
+  const dsel = $("#dfmt").value; S.dateFmt = dsel==="auto" ? detectDateFmt(m.date) : dsel;
+  S.headers = S.headers.filter(h => h!=="Source (clean)" && h!=="Source group");
+  if(m.src){
+    S.raw.forEach(r => {
+      const v = String(r[m.src]==null?"":r[m.src]).trim(); const k = v.toLowerCase();
+      const clean = (S.cleanSrc && SRC_CLEAN[k]) ? SRC_CLEAN[k] : v;
+      r["Source (clean)"] = clean || "(blank)"; r["Source group"] = SRC_GROUP[clean.toLowerCase()] || (clean ? "Other" : "(blank)");
+    });
+    S.headers.push("Source (clean)","Source group");
+  }
+  const isQL = m.ql ? matcher(S.mapVals.ql) : null;
+  const isEnr = m.enr ? matcher(S.mapVals.enr) : null;
+  const seen = new Set(); const rows = []; let bad = 0, dup = 0, excl = 0;
+  for(let i=0;i<S.raw.length;i++){
+    const r = S.raw[i];
+    const d0 = parseDate(r[m.date]); if(!d0){ bad++; continue; }
+    if(m.src && S.exclSrc && SRC_EXCL.has(String(r[m.src]==null?"":r[m.src]).trim().toLowerCase())){ excl++; continue; }
+    if(S.dedupe && m.id){ const id = String(r[m.id]).trim(); if(id){ if(seen.has(id)){ dup++; continue; } seen.add(id); } }
+    const edRaw = m.enrDate ? parseDate(r[m.enrDate]) : null;
+    const rev = m.rev ? parseNum(r[m.rev]) : 0;
+    let enr;
+    if(isEnr) enr = isEnr(r[m.enr]);
+    else if(m.enrDate) enr = !!edRaw;
+    else if(m.rev) enr = rev>0;
+    else enr = false;
+    let ql = isQL ? isQL(r[m.ql]) : false;
+    if(enr) ql = true; // an enrolled lead was necessarily qualified
+    const ed = enr ? ((S.attr==="event" && edRaw) ? edRaw : d0) : null;
+    rows.push({d0:d0, ql:ql, enr:enr, ed:ed, rev:enr?rev:0, r:r});
+  }
+  if(!rows.length){ $("#mapNote").innerHTML = '<span class="err">No valid dates found in the selected date column ('+bad+' rows failed). Check the column.</span>'; return; }
+  S.rows = rows;
+  let mn = rows[0].d0, mx = rows[0].d0;
+  rows.forEach(x => { [x.d0,x.ed].forEach(d => { if(d){ if(d<mn) mn=d; if(d>mx) mx=d; } }); });
+  S.dmin = mn; S.dmax = mx;
+  // dimension candidates
+  const skip = new Set([m.date,m.id,m.enrDate,m.rev].filter(Boolean));
+  S.dims = [];
+  const sample = S.raw.length>20000 ? S.raw.filter((_,i)=>i%Math.ceil(S.raw.length/20000)===0) : S.raw;
+  S.headers.forEach(h => {
+    if(skip.has(h)) return;
+    const set = new Set(); for(const r of sample){ const v = r[h]; if(v!==""&&v!=null) set.add(String(v)); if(set.size>1500) break; }
+    if(set.size>=2 && set.size<=1500) S.dims.push(h);
+  });
+  S.filters = [{c:"",v:""},{c:"",v:""}];
+  S.from = S.dmin; S.to = S.dmax;
+  const notes = [];
+  if(bad) notes.push(bad.toLocaleString("en-IN")+" rows skipped (no valid date)");
+  if(excl) notes.push(excl.toLocaleString("en-IN")+" Channel Partner / Ycmou LSC rows excluded");
+  notes.push("dates read as "+(S.dateFmt==="dmy"?"DD/MM/YYYY":"MM/DD/YYYY"));
+  if(m.ql && !S.mapVals.ql.length) notes.push("⚠ pick which values count as Qualified, otherwise QL = 0");
+  if(m.enr && !S.mapVals.enr.length) notes.push("⚠ pick which values count as Enrolled, otherwise Enrollments = 0");
+  if(dup) notes.push(dup.toLocaleString("en-IN")+" duplicate Lead IDs skipped");
+  notes.push(fmtN(rows.length)+" rows used");
+  $("#mapNote").textContent = notes.join(" · ");
+  $("#dash").classList.remove("hide");
+  initControls(); refresh();
+  $("#mapBody").classList.add("hide"); $("#btnToggleMap").textContent = "Show";
+}
+
+/* ---------- controls ---------- */
+function setRange(a,b){ S.from = sod(a); S.to = sod(b); $("#from").value = ymd(S.from); $("#to").value = ymd(S.to); }
+function initControls(){
+  $("#from").value = ymd(S.from); $("#to").value = ymd(S.to);
+  $("#from").onchange = () => { const d = parseDate($("#from").value); if(d){ S.from=d; if(S.to<S.from) S.to=S.from; $("#to").value=ymd(S.to); refresh(); } };
+  $("#to").onchange = () => { const d = parseDate($("#to").value); if(d){ S.to=d; if(S.from>S.to) S.from=S.to; $("#from").value=ymd(S.from); refresh(); } };
+  const P = [
+    ["Last 7 days", () => [addDays(S.dmax,-6),S.dmax]],
+    ["Last 30 days", () => [addDays(S.dmax,-29),S.dmax]],
+    ["Last 90 days", () => [addDays(S.dmax,-89),S.dmax]],
+    ["This month", () => [new Date(S.dmax.getFullYear(),S.dmax.getMonth(),1),S.dmax]],
+    ["Last month", () => { const s = new Date(S.dmax.getFullYear(),S.dmax.getMonth()-1,1); return [s,addDays(new Date(S.dmax.getFullYear(),S.dmax.getMonth(),1),-1)]; }],
+    ["This quarter", () => [pStart(S.dmax,"quarter"),S.dmax]],
+    ["All data", () => [S.dmin,S.dmax]]
+  ];
+  $("#presets").innerHTML = P.map((p,i) => '<button class="chip" data-p="'+i+'">'+p[0]+'</button>').join("");
+  $$("#presets button").forEach(b => b.onclick = () => { const r = P[+b.dataset.p][1](); setRange(r[0], r[1] < S.dmin ? S.dmin : r[1]); refresh(); });
+  $$("#gran button").forEach(b => b.onclick = () => { S.gran = b.dataset.g; $$("#gran button").forEach(x=>x.classList.toggle("on",x===b)); render(); });
+  $$("#gran button").forEach(x=>x.classList.toggle("on",x.dataset.g===S.gran));
+  // filters
+  $("#filters").innerHTML = S.filters.map((f,i) =>
+    '<label class="f">Filter '+(i+1)+'<select data-fc="'+i+'"><option value="">— none —</option>'+S.dims.map(d=>'<option>'+esc(d)+'</option>').join("")+'</select></label>'+
+    '<label class="f">Value<select data-fv="'+i+'" disabled><option value="">All</option></select></label>'
+  ).join("");
+  $$("[data-fc]").forEach(s => s.onchange = () => {
+    const i = +s.dataset.fc; S.filters[i] = {c:s.value, v:""};
+    const vs = $('[data-fv="'+i+'"]');
+    if(!s.value){ vs.innerHTML = '<option value="">All</option>'; vs.disabled = true; }
+    else { vs.disabled = false; vs.innerHTML = '<option value="">All</option>'+distinctVals(s.value,300).map(x=>'<option value="'+esc(x[0])+'">'+esc(x[0])+' ('+fmtN(x[1])+')</option>').join(""); }
+    refresh();
+  });
+  $$("[data-fv]").forEach(s => s.onchange = () => { S.filters[+s.dataset.fv].v = s.value; refresh(); });
+  // tabs
+  $$("#tabs button").forEach(b => b.onclick = () => { S.tab = b.dataset.t; $$("#tabs button").forEach(x=>x.classList.toggle("on",x===b)); $$("[id^=tab-]").forEach(x=>x.classList.toggle("hide",x.id!=="tab-"+S.tab)); render(); });
+  // targets
+  ["Leads","Enr","Rev"].forEach(k => { $("#t"+k).oninput = () => { S.target[k.toLowerCase()] = +$("#t"+k).value||0; renderPace(); }; });
+  // breakdown/explorer
+  const dimOpts = S.dims.map(d=>'<option>'+esc(d)+'</option>').join("");
+  $("#bdCol").innerHTML = dimOpts; $("#bdCol").onchange = renderBreakdown; $("#bdSort").onchange = renderBreakdown;
+  const pref = S.dims.find(d => /^source \(clean\)$/i.test(d)) || S.dims.find(d => /owner|team|tl|agent|counsel|source|program|course/i.test(d));
+  if(pref) $("#bdCol").value = pref;
+  const periodOpts = '<option value="@day">⏱ Day (lead date)</option><option value="@week">⏱ Week (lead date)</option><option value="@month">⏱ Month (lead date)</option><option value="@quarter">⏱ Quarter (lead date)</option>';
+  const allCols = S.headers.map(d=>'<option>'+esc(d)+'</option>').join("");
+  $("#exRow").innerHTML = periodOpts + S.headers.map(d=>'<option>'+esc(d)+'</option>').join("");
+  $("#exCol").innerHTML = '<option value="">— none —</option>' + periodOpts + allCols;
+  $("#exMeasCol").innerHTML = allCols;
+  $("#exRow").value = pref || "@month";
+  $("#exRun").onclick = renderExplorer;
+  $("#exMeas").onchange = () => { $("#exMeasCol").disabled = $("#exMeas").value==="count"; };
+  $("#exMeasCol").disabled = true;
+  $("#dtSearch").oninput = renderData;
+  $("#expTrend").onclick = () => exportCSV("trend",S.exportData.trend);
+  $("#expBd").onclick = () => exportCSV("breakdown",S.exportData.bd);
+  $("#expEx").onclick = () => exportCSV("explorer",S.exportData.ex);
+  $("#expData").onclick = () => exportCSV("filtered-rows",S.exportData.data);
+  $("#footNote").textContent = "Weeks run Monday to Sunday. Ranges are inclusive. Latest date in data: "+S.dmax.toDateString()+".";
+}
+
+function refresh(){
+  const act = S.filters.filter(f => f.c && f.v);
+  S.view = act.length ? S.rows.filter(x => act.every(f => String(x.r[f.c]==null?"":x.r[f.c]).trim()===f.v)) : S.rows;
+  const edge = [];
+  if(+pStart(S.from,S.gran)!==+S.from && S.gran!=="day") edge.push("first");
+  $("#rangeNote").textContent = fmtN(S.view.length)+" rows match the filters"+(edge.length ? " · the first "+GNAME[S.gran]+" is partial because the range does not start on a "+GNAME[S.gran]+" boundary" : "");
+  render();
+}
+function render(){
+  Object.values(S.charts).forEach(c => { try{ c.destroy(); }catch(e){} }); S.charts = {};
+  if(S.tab==="overview") renderOverview();
+  else if(S.tab==="trends") renderTrends();
+  else if(S.tab==="breakdown") renderBreakdown();
+  else if(S.tab==="explorer") { if(!S.ex) renderExplorer(); else renderExplorer(); }
+  else renderData();
+}
+
+/* ---------- aggregation ---------- */
+function mk(){ return {leads:0,ql:0,enr:0,rev:0}; }
+function totals(rows,from,to){
+  const t = mk();
+  for(const r of rows){
+    if(r.d0>=from && r.d0<=to){ t.leads++; if(r.ql) t.ql++; }
+    if(r.enr && r.ed>=from && r.ed<=to){ t.enr++; t.rev += r.rev; }
+  }
+  return t;
+}
+function series(rows,from,to,g){
+  const map = new Map(); let s = pStart(from,g);
+  while(s<=to){ map.set(ymd(s),Object.assign(mk(),{start:s})); s = pNext(s,g); }
+  for(const r of rows){
+    if(r.d0>=from && r.d0<=to){ const o = map.get(ymd(pStart(r.d0,g))); o.leads++; if(r.ql) o.ql++; }
+    if(r.enr && r.ed>=from && r.ed<=to){ const o = map.get(ymd(pStart(r.ed,g))); o.enr++; o.rev += r.rev; }
+  }
+  return Array.from(map.values());
+}
+function groups(rows,from,to,col){
+  const map = new Map();
+  const get = k => { let o = map.get(k); if(!o){ o = mk(); map.set(k,o); } return o; };
+  for(const r of rows){
+    const k = String(r.r[col]==null||r.r[col]===""?"(blank)":r.r[col]).trim();
+    if(r.d0>=from && r.d0<=to){ const o = get(k); o.leads++; if(r.ql) o.ql++; }
+    if(r.enr && r.ed>=from && r.ed<=to){ const o = get(k); o.enr++; o.rev += r.rev; }
+  }
+  return map;
+}
+const ratio = (a,b) => b ? a/b : null;
+const growth = (cur,prev) => (prev==null||prev===0||cur==null) ? null : (cur-prev)/prev;
+function prevWindow(){
+  const len = dayDiff(S.from,S.to)+1; const pt = addDays(S.from,-1); return [addDays(pt,-(len-1)),pt];
+}
+function dHTML(g,suffix){
+  if(g==null) return '<span class="flat">–</span>';
+  const cls = g>0.0005?"up":g<-0.0005?"dn":"flat";
+  return '<span class="'+cls+'">'+(g>0?"▲ ":g<0?"▼ ":"")+Math.abs(g*100).toFixed(1)+"%"+(suffix||"")+'</span>';
+}
+function cssv(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function chartDefaults(){
+  Chart.defaults.color = cssv("--muted"); Chart.defaults.borderColor = cssv("--line");
+  Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+}
+
+/* ---------- overview ---------- */
+function renderOverview(){
+  chartDefaults();
+  const cur = totals(S.view,S.from,S.to);
+  const pw = prevWindow(); const prv = totals(S.view,pw[0],pw[1]);
+  const hasPrev = pw[1] >= S.dmin;
+  const cards = [
+    ["Leads",fmtN(cur.leads),growth(cur.leads,prv.leads)],
+    ["Qualified leads",fmtN(cur.ql),growth(cur.ql,prv.ql)],
+    ["Enrollments",fmtN(cur.enr),growth(cur.enr,prv.enr)],
+    ["Revenue",fmtINR(cur.rev),growth(cur.rev,prv.rev)],
+    ["Lead → Enrolment",fmtP(ratio(cur.enr,cur.leads)),null,(ratio(cur.enr,cur.leads)==null||ratio(prv.enr,prv.leads)==null)?null:ratio(cur.enr,cur.leads)-ratio(prv.enr,prv.leads)],
+    ["Revenue / enrolment",fmtINR(ratio(cur.rev,cur.enr)),growth(ratio(cur.rev,cur.enr),ratio(prv.rev,prv.enr))]
+  ];
+  $("#kpis").innerHTML = cards.map(c => {
+    let d;
+    if(!hasPrev) d = '<span class="flat">No earlier period in data</span>';
+    else if(c[3]!==undefined && c[3]!=null && !isNaN(c[3])) d = '<span class="'+(c[3]>0?"up":c[3]<0?"dn":"flat")+'">'+(c[3]>0?"▲ ":c[3]<0?"▼ ":"")+Math.abs(c[3]*100).toFixed(1)+' pp</span> <span class="sub">vs previous period</span>';
+    else d = dHTML(c[2])+' <span class="sub">vs previous period</span>';
+    return '<div class="card kpi"><div class="l">'+c[0]+'</div><div class="v">'+c[1]+'</div><div class="d">'+d+'</div></div>';
+  }).join("");
+  // metric chips
+  $("#metricChips").innerHTML = Object.keys(MET).map(k => '<button class="chip'+(S.metric===k?" on":"")+'" data-m="'+k+'">'+MET[k].n+'</button>').join("");
+  $$("#metricChips button").forEach(b => b.onclick = () => { S.metric = b.dataset.m; render(); });
+  const sr = series(S.view,S.from,S.to,S.gran);
+  $("#trendTitle").textContent = MET[S.metric].n+" by "+GNAME[S.gran];
+  S.charts.t = new Chart($("#cTrend"),{
+    type:"bar",
+    data:{labels:sr.map(o=>pLabel(o.start,S.gran)),datasets:[
+      {type:"bar",label:MET[S.metric].n,data:sr.map(o=>o[S.metric]),backgroundColor:cssv("--c1"),borderRadius:4,order:2},
+      {type:"line",label:DELTA[S.gran]+" growth %",data:sr.map((o,i)=>i? (growth(o[S.metric],sr[i-1][S.metric])==null?null:+(growth(o[S.metric],sr[i-1][S.metric])*100).toFixed(1)) : null),borderColor:cssv("--c3"),backgroundColor:cssv("--c3"),yAxisID:"y2",tension:.25,pointRadius:3,spanGaps:true,order:1}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+      scales:{y:{beginAtZero:true,ticks:{callback:v=>S.metric==="rev"?fmtINR(v):fmtN(v)}},y2:{position:"right",grid:{drawOnChartArea:false},ticks:{callback:v=>v+"%"}},x:{ticks:{maxRotation:60,autoSkip:true}}},
+      plugins:{legend:{position:"bottom"},tooltip:{callbacks:{label:c=>c.dataset.yAxisID==="y2"?c.dataset.label+": "+(c.raw==null?"–":c.raw+"%"):MET[S.metric].n+": "+MET[S.metric].f(c.raw)}}}}
+  });
+  S.charts.f = new Chart($("#cFunnel"),{
+    type:"bar",
+    data:{labels:["Leads","Qualified","Enrolled"],datasets:[{data:[cur.leads,cur.ql,cur.enr],backgroundColor:[cssv("--c2"),cssv("--c1"),cssv("--c4")],borderRadius:4}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmtN(c.raw)+(c.dataIndex? " ("+fmtP(ratio(c.raw,cur.leads))+" of leads)":"")}}},scales:{x:{beginAtZero:true,ticks:{callback:v=>fmtN(v)}}}}
+  });
+  renderInsights(cur,prv,hasPrev,sr);
+  renderPace();
+}
+function renderInsights(cur,prv,hasPrev,sr){
+  const out = [];
+  if(hasPrev){
+    const gr = growth(cur.rev,prv.rev), ge = growth(cur.enr,prv.enr), gl = growth(cur.leads,prv.leads);
+    if(gr!=null) out.push("Revenue is <b>"+(gr>=0?"up ":"down ")+Math.abs(gr*100).toFixed(1)+"%</b> ("+fmtINR(cur.rev)+" vs "+fmtINR(prv.rev)+") compared with the previous "+(dayDiff(S.from,S.to)+1)+" days.");
+    if(gl!=null && ge!=null){
+      const l2e = ratio(cur.enr,cur.leads), p2e = ratio(prv.enr,prv.leads);
+      if(l2e!=null && p2e!=null) out.push("Leads "+(gl>=0?"rose ":"fell ")+Math.abs(gl*100).toFixed(1)+"% while enrollments "+(ge>=0?"rose ":"fell ")+Math.abs(ge*100).toFixed(1)+"%, so lead → enrolment moved from "+fmtP(p2e)+" to "+fmtP(l2e)+".");
+    }
+    const dim = S.dims.find(d => /^source \(clean\)$/i.test(d)) || S.dims.find(d => /owner|team|tl|agent|counsel|source|program|course/i.test(d)) || S.dims[0];
+    if(dim){
+      const gc = groups(S.view,S.from,S.to,dim), gp = groups(S.view,prevWindow()[0],prevWindow()[1],dim);
+      let top = null, up = null, dn = null;
+      gc.forEach((o,k) => { if(!top || o.rev>top[1].rev) top = [k,o]; const dl = o.rev-((gp.get(k)||mk()).rev); if(!up||dl>up[1]) up=[k,dl]; if(!dn||dl<dn[1]) dn=[k,dl]; });
+      gp.forEach((o,k) => { if(!gc.has(k)){ const dl = -o.rev; if(!dn||dl<dn[1]) dn=[k,dl]; } });
+      if(top && cur.rev>0) out.push("By <i>"+esc(dim)+"</i>: top revenue is <b>"+esc(top[0])+"</b> ("+fmtINR(top[1].rev)+", "+(top[1].rev/cur.rev*100).toFixed(0)+"% of total).");
+      if(up && up[1]>0) out.push("Biggest revenue gain: <b>"+esc(up[0])+"</b> (+"+fmtINR(up[1])+").");
+      if(dn && dn[1]<0) out.push("Biggest revenue drop: <b>"+esc(dn[0])+"</b> ("+fmtINR(dn[1])+").");
+    }
+  }
+  const full = sr.filter(o => o.rev>0 || o.enr>0);
+  if(full.length>2){
+    const best = full.reduce((a,b)=>b.rev>a.rev?b:a), worst = full.reduce((a,b)=>b.rev<a.rev?b:a);
+    out.push("Best "+GNAME[S.gran]+" for revenue: <b>"+pLabel(best.start,S.gran)+"</b> ("+fmtINR(best.rev)+"). Lowest: "+pLabel(worst.start,S.gran)+" ("+fmtINR(worst.rev)+").");
+  }
+  if(!out.length) out.push("Widen the date range to see comparisons.");
+  $("#insights").innerHTML = out.map(x=>"<li>"+x+"</li>").join("");
+}
+function renderPace(){
+  const asOf = S.to, ms = new Date(asOf.getFullYear(),asOf.getMonth(),1);
+  const dim = new Date(asOf.getFullYear(),asOf.getMonth()+1,0).getDate(), el = asOf.getDate();
+  const mtd = totals(S.view,ms,asOf);
+  const proj = {leads:mtd.leads/el*dim, enr:mtd.enr/el*dim, rev:mtd.rev/el*dim};
+  const rows = [["leads","Leads",fmtN],["enr","Enrollments",fmtN],["rev","Revenue",fmtINR]];
+  let h = '<div class="note">'+mon(asOf)+" "+asOf.getFullYear()+": day "+el+" of "+dim+" (as of "+asOf.toDateString()+")</div>";
+  rows.forEach(r => {
+    const t = S.target[r[0]], pr = proj[r[0]], pct = t>0 ? pr/t : null;
+    h += '<div class="pace"><div class="row" style="justify-content:space-between"><b>'+r[1]+'</b><span>MTD '+r[2](mtd[r[0]])+' · projected '+r[2](pr)+'</span></div>';
+    if(t>0){
+      h += '<div class="bar"><i style="width:'+Math.min(100,pct*100).toFixed(1)+'%;background:'+(pct>=1?cssv("--good"):pct>=.9?cssv("--c3"):cssv("--bad"))+'"></i></div>';
+      const left = Math.max(0,t-mtd[r[0]]), dleft = Math.max(1,dim-el);
+      h += '<div class="note" style="margin:0">Run rate = <b>'+(pct*100).toFixed(0)+'%</b> of target '+r[2](t)+(left>0 && dim>el ? " · needs "+r[2](left/dleft)+"/day for the rest of the month" : "")+'</div>';
+    } else h += '<div class="note" style="margin:0">Enter a monthly target to see pacing.</div>';
+    h += '</div>';
+  });
+  $("#pace").innerHTML = h;
+}
+
+/* ---------- trends table ---------- */
+function renderTrends(){
+  const sr = series(S.view,S.from,S.to,S.gran);
+  const dl = DELTA[S.gran];
+  const cols = sr.map(o => pLabel(o.start,S.gran));
+  const defs = [
+    ["Leads",o=>o.leads,fmtN,true],["Qualified leads",o=>o.ql,fmtN,true],["Enrollments",o=>o.enr,fmtN,true],["Revenue",o=>o.rev,fmtINR,true],
+    ["Lead → QL %",o=>ratio(o.ql,o.leads),fmtP,false],["QL → Enrolment %",o=>ratio(o.enr,o.ql),fmtP,false],["Lead → Enrolment %",o=>ratio(o.enr,o.leads),fmtP,false],["Revenue / enrolment",o=>ratio(o.rev,o.enr),fmtINR,false]
+  ];
+  let h = "<thead><tr><th>Metric</th>"+cols.map(c=>"<th>"+esc(c)+"</th>").join("")+"<th>Total</th></tr></thead><tbody>";
+  const exp = [["Metric"].concat(cols).concat(["Total"])];
+  const tot = totals(S.view,S.from,S.to);
+  defs.forEach(d => {
+    const vals = sr.map(d[1]);
+    const totVal = d[1](tot);
+    h += "<tr><td>"+d[0]+"</td>"+vals.map(v=>"<td>"+d[2](v)+"</td>").join("")+"<td><b>"+d[2](totVal)+"</b></td></tr>";
+    exp.push([d[0]].concat(vals.map(v=>v==null?"":(typeof v==="number"?+v.toFixed(4):v))).concat([totVal==null?"":+totVal.toFixed(4)]));
+    if(d[3]){
+      const gs = vals.map((v,i)=> i? growth(v,vals[i-1]) : null);
+      h += '<tr class="sub"><td>'+dl+" %</td>"+gs.map(g=>"<td>"+dHTML(g)+"</td>").join("")+"<td></td></tr>";
+      exp.push([dl+" % ("+d[0]+")"].concat(gs.map(g=>g==null?"":+(g*100).toFixed(2))).concat([""]));
+    }
+  });
+  $("#trendTbl").innerHTML = h+"</tbody>";
+  S.exportData.trend = exp;
+  $("#trendNote").textContent = dl+" = change versus the previous "+GNAME[S.gran]+". Switch Day / Week / Month / Quarter above to get WoW, MoM or QoQ.";
+}
+
+/* ---------- breakdown ---------- */
+function renderBreakdown(){
+  if(!S.dims.length){ $("#bdTbl").innerHTML = "<tr><td>No suitable category columns found.</td></tr>"; return; }
+  chartDefaults();
+  const col = $("#bdCol").value, sortK = $("#bdSort").value;
+  const gc = groups(S.view,S.from,S.to,col), pw = prevWindow(), gp = groups(S.view,pw[0],pw[1],col);
+  const tot = totals(S.view,S.from,S.to);
+  let arr = Array.from(gc.entries()).map(([k,o]) => ({k:k,o:o,p:gp.get(k)||mk(),l2e:ratio(o.enr,o.leads)}));
+  arr.sort((a,b) => sortK==="l2e" ? (b.l2e||0)-(a.l2e||0) : b.o[sortK]-a.o[sortK]);
+  const shown = arr.slice(0,100);
+  let h = "<thead><tr><th>"+esc(col)+"</th><th>Leads</th><th>QL</th><th>Enrollments</th><th>Revenue</th><th>% of revenue</th><th>Lead → Enr %</th><th>Rev / enr</th><th>Δ Enrollments</th><th>Δ Revenue</th></tr></thead><tbody>";
+  const exp = [[col,"Leads","QL","Enrollments","Revenue","% of revenue","Lead→Enr %","Rev/enr","Prev enrollments","Prev revenue"]];
+  shown.forEach(x => {
+    h += "<tr><td>"+esc(x.k)+"</td><td>"+fmtN(x.o.leads)+"</td><td>"+fmtN(x.o.ql)+"</td><td>"+fmtN(x.o.enr)+"</td><td>"+fmtINR(x.o.rev)+"</td><td>"+fmtP(ratio(x.o.rev,tot.rev))+"</td><td>"+fmtP(x.l2e)+"</td><td>"+fmtINR(ratio(x.o.rev,x.o.enr))+"</td><td>"+dHTML(growth(x.o.enr,x.p.enr))+"</td><td>"+dHTML(growth(x.o.rev,x.p.rev))+"</td></tr>";
+    exp.push([x.k,x.o.leads,x.o.ql,x.o.enr,Math.round(x.o.rev),x.o.rev&&tot.rev?+(x.o.rev/tot.rev*100).toFixed(2):0,x.l2e==null?"":+(x.l2e*100).toFixed(2),x.o.enr?Math.round(x.o.rev/x.o.enr):"",x.p.enr,Math.round(x.p.rev)]);
+  });
+  h += '<tr class="tot"><td>Total</td><td>'+fmtN(tot.leads)+"</td><td>"+fmtN(tot.ql)+"</td><td>"+fmtN(tot.enr)+"</td><td>"+fmtINR(tot.rev)+"</td><td></td><td>"+fmtP(ratio(tot.enr,tot.leads))+"</td><td>"+fmtINR(ratio(tot.rev,tot.enr))+"</td><td></td><td></td></tr>";
+  $("#bdTbl").innerHTML = h+"</tbody>";
+  S.exportData.bd = exp;
+  $("#bdNote").innerHTML = "Δ columns compare the selected range with the previous "+(dayDiff(S.from,S.to)+1)+" days.<br>"+arr.length+" groups"+(arr.length>100?" (top 100 shown)":"")+".";
+  const top = arr.slice(0,10);
+  const key = sortK==="l2e" ? null : sortK;
+  if(S.charts.bd){ S.charts.bd.destroy(); }
+  S.charts.bd = new Chart($("#cBd"),{
+    type:"bar",
+    data:{labels:top.map(x=>x.k.length>22?x.k.slice(0,22)+"…":x.k),datasets:[{data:top.map(x=>key?x.o[key]:(x.l2e||0)*100),backgroundColor:cssv("--c1"),borderRadius:4}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},title:{display:true,text:"Top 10 by "+$("#bdSort").selectedOptions[0].text}},scales:{x:{beginAtZero:true,ticks:{callback:v=>key==="rev"?fmtINR(v):key?fmtN(v):v+"%"}}}}
+  });
+}
+
+/* ---------- explorer ---------- */
+function getter(sel){
+  if(sel && sel[0]==="@"){ const g = sel.slice(1); return r => ymd(pStart(r.d0,g)); }
+  if(!sel) return null;
+  return r => { const v = r.r[sel]; return (v===""||v==null) ? "(blank)" : String(v).trim(); };
+}
+function renderExplorer(){
+  const rowSel = $("#exRow").value, colSel = $("#exCol").value, meas = $("#exMeas").value, mcol = $("#exMeasCol").value, show = $("#exShow").value;
+  const top = Math.max(5,Math.min(500,+$("#exTop").value||50));
+  const rg = getter(rowSel), cg = getter(colSel);
+  const data = S.view.filter(r => r.d0>=S.from && r.d0<=S.to);
+  const mkAcc = () => ({n:0,s:0,c:0,mn:Infinity,mx:-Infinity,set:meas==="distinct"?new Set():null});
+  const add = (a,r) => {
+    a.n++;
+    if(meas==="distinct") a.set.add(String(r.r[mcol]));
+    else if(meas!=="count"){ const raw = r.r[mcol]; if(raw!==""&&raw!=null){ const v = parseNum(raw); a.s+=v; a.c++; if(v<a.mn) a.mn=v; if(v>a.mx) a.mx=v; } }
+  };
+  const val = a => !a ? null : meas==="count"?a.n : meas==="distinct"?a.set.size : meas==="sum"?a.s : meas==="avg"?(a.c?a.s/a.c:null) : meas==="min"?(a.c?a.mn:null) : (a.c?a.mx:null);
+  const cells = new Map(), rt = new Map(), ct = new Map(), gt = mkAcc();
+  const rKeys = new Map(), cKeys = new Map();
+  for(const r of data){
+    const rk = rg(r), ck = cg ? cg(r) : "All";
+    let c = cells.get(rk+"\u0001"+ck); if(!c){ c = mkAcc(); cells.set(rk+"\u0001"+ck,c); } add(c,r);
+    let a = rt.get(rk); if(!a){ a = mkAcc(); rt.set(rk,a); } add(a,r);
+    let b = ct.get(ck); if(!b){ b = mkAcc(); ct.set(ck,b); } add(b,r);
+    add(gt,r);
+  }
+  const isPeriodR = rowSel[0]==="@", isPeriodC = colSel[0]==="@";
+  let rs = Array.from(rt.keys());
+  if(isPeriodR) rs.sort(); else rs.sort((a,b)=>(val(rt.get(b))||0)-(val(rt.get(a))||0));
+  const totalRows = rs.length; rs = rs.slice(0,top);
+  let cs = Array.from(ct.keys());
+  if(isPeriodC) cs.sort(); else cs.sort((a,b)=>ct.get(b).n-ct.get(a).n);
+  const totalCols = cs.length; cs = cs.slice(0,30);
+  const lab = (k,sel) => sel[0]==="@" ? pLabel(fromYmd(k),sel.slice(1)) : k;
+  const fmtV = v => v==null ? "–" : (meas==="count"||meas==="distinct") ? fmtN(v) : fmtD(v,2);
+  const out = (v,rowT,colT) => {
+    if(v==null) return "–";
+    if(show==="v") return fmtV(v);
+    const den = show==="r"?rowT : show==="c"?colT : val(gt);
+    return den ? (v/den*100).toFixed(1)+"%" : "–";
+  };
+  const showAll = !!cg;
+  let maxV = 0; cs.forEach(c => rs.forEach(r => { const v = val(cells.get(r+"\u0001"+c)); if(v>maxV) maxV = v; }));
+  const heat = v => (v==null||!maxV||show!=="v") ? "" : ' style="background:color-mix(in srgb, var(--accent) '+Math.round(Math.min(1,v/maxV)*28)+'%, transparent)"';
+  const mname = meas==="count" ? "Count of rows" : $("#exMeas").selectedOptions[0].text.replace("…","")+" "+mcol;
+  let h = "<thead><tr><th>"+esc(rowSel[0]==="@"?"Period":rowSel)+(showAll?" ↓ / "+esc(colSel[0]==="@"?"Period":colSel)+" →":"")+"</th>";
+  const exp = [[rowSel[0]==="@"?"Period":rowSel]];
+  if(showAll){ cs.forEach(c => { h += "<th>"+esc(lab(c,colSel))+"</th>"; exp[0].push(lab(c,colSel)); }); h += "<th>Total</th>"; exp[0].push("Total"); }
+  else { h += "<th>"+esc(mname)+"</th>"; exp[0].push(mname); }
+  h += "</tr></thead><tbody>";
+  rs.forEach(r => {
+    const rtv = val(rt.get(r));
+    h += "<tr><td>"+esc(lab(r,rowSel))+"</td>";
+    const line = [lab(r,rowSel)];
+    if(showAll){
+      cs.forEach(c => { const v = val(cells.get(r+"\u0001"+c)); const ctv = val(ct.get(c)); h += "<td"+heat(v)+">"+out(v,rtv,ctv)+"</td>"; line.push(v==null?"":+(+v).toFixed(4)); });
+      h += "<td><b>"+out(rtv,rtv,val(gt))+"</b></td>"; line.push(rtv==null?"":+(+rtv).toFixed(4));
+    } else { h += "<td>"+out(rtv,rtv,val(gt))+"</td>"; line.push(rtv==null?"":+(+rtv).toFixed(4)); }
+    h += "</tr>"; exp.push(line);
+  });
+  const gv = val(gt);
+  h += '<tr class="tot"><td>Total</td>';
+  const tl = ["Total"];
+  if(showAll){ cs.forEach(c => { const v = val(ct.get(c)); h += "<td>"+out(v,gv,v)+"</td>"; tl.push(v==null?"":+(+v).toFixed(4)); }); }
+  h += "<td>"+(show==="v"?fmtV(gv):"100%")+"</td></tr>"; tl.push(gv==null?"":+(+gv).toFixed(4));
+  exp.push(tl);
+  $("#exTbl").innerHTML = h+"</tbody>";
+  S.exportData.ex = exp; S.ex = true;
+  $("#exNote").textContent = fmtN(data.length)+" rows analysed · "+mname+(totalRows>top?" · showing "+top+" of "+totalRows+" rows":"")+(totalCols>30?" · showing 30 of "+totalCols+" columns":"");
+}
+
+/* ---------- data tab ---------- */
+function renderData(){
+  const q = ($("#dtSearch").value||"").toLowerCase().trim();
+  let rows = S.view.filter(r => r.d0>=S.from && r.d0<=S.to);
+  if(q) rows = rows.filter(r => S.headers.some(h => String(r.r[h]).toLowerCase().includes(q)));
+  const cols = S.headers.slice(0,40);
+  const shown = rows.slice(0,300);
+  $("#dtTbl").innerHTML = "<thead><tr>"+cols.map(c=>"<th>"+esc(c)+"</th>").join("")+"</tr></thead><tbody>"+shown.map(r=>"<tr>"+cols.map(c=>"<td>"+esc(r.r[c])+"</td>").join("")+"</tr>").join("")+"</tbody>";
+  $("#dtNote").textContent = fmtN(rows.length)+" rows (first "+shown.length+" shown)";
+  S.exportData.data = [S.headers].concat(rows.slice(0,200000).map(r => S.headers.map(h => r.r[h])));
+}
+
+/* ---------- export ---------- */
+function toCSV(rows){
+  return rows.map(r => r.map(v => { const s = v==null?"":String(v); return /[",\n\r]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; }).join(",")).join("\r\n");
+}
+async function exportCSV(name,rows){
+  if(!rows || !rows.length){ return; }
+  const csv = "\ufeff"+toCSV(rows), fn = "medharthi-"+name+"-"+ymd(new Date())+".csv";
+  try{
+    const dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null;
+    if(dl){ await dl.save({filename:fn,data:csv}); return; }
+  }catch(e){ if(e && e.code==="declined") return; }
+  try{
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})); a.download = fn;
+    document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500);
+  }catch(e){ alert("Export is not available in this view."); }
+}
+
+/* ---------- sample data (LeadSquared-style columns) ---------- */
+function makeSample(){
+  let seed = 7; const rnd = () => { seed = (seed*16807)%2147483647; return seed/2147483647; };
+  const pick = a => a[Math.floor(rnd()*a.length)];
+  const OWN = ["Murugan Mudaliar","Neha Sharma","Rohit Verma","Sana Khan","Vikram Singh"];
+  const SRC = ["Facebook Ads","Facebook Ads","ig","Google Ads","pwmedharthi","pw.live","clm","Referral","Channel Partner","Webinar"];
+  const PRG = ["IIT Jammu GenAI for Financial Markets","IIM Kozhikode Data Science","IIT Roorkee AI/ML","Online MBA Degree"];
+  const CITY = ["Mumbai","Delhi","Bengaluru","Pune","Hyderabad","Lucknow"];
+  const end = new Date(2026,10,8); const out = [];
+  const us = (d,h,m) => pad(d.getMonth()+1)+"/"+pad(d.getDate())+"/"+d.getFullYear()+" "+pad(h)+":"+pad(m);
+  for(let i=0;i<7000;i++){
+    const back = Math.floor(Math.pow(rnd(),1.15)*150);
+    const d0 = addDays(end,-back);
+    const src = pick(SRC), prg = pick(PRG), own = pick(OWN);
+    const mql = rnd() < (src==="Referral"?.7:src==="Facebook Ads"?.35:.5);
+    const won = mql && rnd() < (prg==="Online MBA Degree"?.12:.2) * (own==="Neha Sharma"?1.3:1);
+    const cd = won ? addDays(d0,Math.floor(rnd()*12)) : null;
+    const price = prg==="Online MBA Degree" ? 85000 : prg==="IIM Kozhikode Data Science" ? 62000 : 48000;
+    out.push({
+      "Opportunity Id":"opp-"+(100000+i),
+      "Created On": us(d0,Math.floor(rnd()*24),Math.floor(rnd()*60)),
+      "Opportunity Source":src, "Program":prg, "Owner (User Name)":own, "City":pick(CITY),
+      "Stage": won ? "Payment Done" : mql ? pick(["Interested","Application","Meeting Scheduled"]) : pick(["Fresh","Explore"]),
+      "MQL": mql ? "Yes" : "",
+      "Status": won ? "Won" : rnd()<.25 ? "Lost" : "Open",
+      "Actual Closure Date": cd ? us(cd>end?end:cd,12,0) : "",
+      "Actual Deal Size": won ? Math.round(price*(0.9+rnd()*.2)) : ""
+    });
+  }
+  return out;
+}
+</script>
+</body>
+</html>
